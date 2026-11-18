@@ -1,0 +1,11 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/apigee/apigee-templater/main/schema/gateway.schema.1.0.json
+gateway: apigee
+schemaVersion: 1.0.0
+name: invoices-mcp-v1-product
+displayName: Invoices MCP API v1 (Unlimited)
+type: product
+description: Unlimited access to the invoices-mcp-v1 proxy
+access: public
+approvalType: auto
+proxies:
+  - invoices-mcp-v1

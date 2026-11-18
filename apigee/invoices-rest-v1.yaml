@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/apigee/apigee-templater/main/schema/gateway.schema.1.0.json
+gateway: apigee
+schemaVersion: 1.0.0
+name: invoices-rest-v1
+displayName: Invoices REST API v1
+type: proxy
+description: REST proxy for the Invoices domain on Sample Business Service
+categories:
+  - invoices
+  - rest
+parameters:
+  - name: CLOUD_RUN_URL
+    displayName: Cloud Run Deployment URL
+    description: Base URL of the Cloud Run service (e.g. https://sample-business-services-xyz.a.run.app)
+    default: https://sample-business-services.example.run.app
+endpoints:
+  - name: default
+    basePath: /v1/invoices
+    routes:
+      - name: default
+        target: default
+    flows:
+      - name: PreFlow
+        mode: Request
+        steps:
+          - name: Verify-API-Key
+targets:
+  - name: default
+    httpTargetConnection:
+      URL: "{CLOUD_RUN_URL}/api/v1/invoices"
+      Authentication:
+        GoogleIDToken:
+          Audience: "{CLOUD_RUN_URL}"
+policies:
+  - name: Verify-API-Key
+    type: VerifyAPIKey
+    content:
+      VerifyAPIKey:
+        metadata:
+          name: Verify-API-Key
+        APIKey:
+          metadata:
+            ref: request.header.x-api-key

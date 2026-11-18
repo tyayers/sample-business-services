@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <title>Sample Business Services — REST &amp; MCP Explorer</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-brand">
+      <span class="brand-badge" aria-hidden="true">S</span>
+      <div>
+        <h1>Sample Business Services</h1>
+        <p class="subtitle">OpenAPI 3.2.0 &amp; MCP (<code>/mcp</code>)</p>
+      </div>
+    </div>
+    <nav class="topbar-links" aria-label="Specifications and theme">
+      <a href="/docs" target="_blank" rel="noopener">Swagger</a>
+      <a href="/openapi.json" target="_blank" rel="noopener">openapi.json</a>
+      <a href="/healthz" target="_blank" rel="noopener">Health</a>
+      <button type="button" id="theme-toggle-btn" class="btn btn-small" title="Switch color theme">Theme: Auto</button>
+    </nav>
+  </header>
+
+  <main class="container">
+    <section aria-labelledby="kpi-heading" class="kpi-section">
+      <div class="section-header">
+        <h2 id="kpi-heading">Live Enterprise KPIs</h2>
+        <button type="button" id="refresh-kpi-btn" class="btn btn-secondary">Refresh KPIs</button>
+      </div>
+      <div id="kpi-grid" class="kpi-grid" aria-live="polite">
+        <div class="kpi-card"><span class="kpi-label">Loading...</span></div>
+      </div>
+    </section>
+
+    <nav class="mode-tabs" aria-label="Explorer modes" role="tablist">
+      <button type="button" role="tab" aria-selected="true" class="mode-tab active" data-mode="explorer">
+        Domain Data Explorer
+      </button>
+      <button type="button" role="tab" aria-selected="false" class="mode-tab" data-mode="rest">
+        REST / OpenAPI Playground
+      </button>
+      <button type="button" role="tab" aria-selected="false" class="mode-tab" data-mode="mcp">
+        MCP Tools &amp; Resources
+      </button>
+    </nav>
+
+    <!-- Mode 1: Domain Data Explorer -->
+    <section id="panel-explorer" class="mode-panel active" aria-label="Domain Data Explorer">
+      <div class="explorer-toolbar">
+        <div id="domain-tabs" class="domain-tabs" role="tablist" aria-label="Business domains"></div>
+        <div class="protocol-switch" role="group" aria-label="Query protocol">
+          <span class="protocol-label">Protocol:</span>
+          <button type="button" class="proto-btn active" data-protocol="REST">REST</button>
+          <button type="button" class="proto-btn" data-protocol="MCP">MCP</button>
+        </div>
+      </div>
+
+      <search class="filter-bar">
+        <form id="explorer-filter-form" class="filter-form">
+          <div id="dynamic-filters" class="dynamic-filters"></div>
+          <div class="filter-actions">
+            <button type="submit" class="btn btn-primary">Search / Query</button>
+            <button type="button" id="reset-filters-btn" class="btn btn-secondary">Reset</button>
+          </div>
+        </form>
+      </search>
+
+      <div class="sample-call-box">
+        <div class="sample-call-header">
+          <span id="explorer-call-meta" class="call-meta">Ready</span>
+          <button type="button" id="copy-explorer-curl" class="btn btn-small">Copy curl</button>
+        </div>
+        <pre tabindex="0"><code id="explorer-curl-code"></code></pre>
+      </div>
+
+      <div class="results-header">
+        <h3 id="explorer-results-title">Records</h3>
+        <div class="results-controls">
+          <span id="explorer-count-badge" class="badge">0 items</span>
+          <button type="button" id="toggle-raw-json" class="btn btn-small">Toggle Raw JSON</button>
+        </div>
+      </div>
+
+      <div id="explorer-table-wrap" class="table-wrap"></div>
+      <pre id="explorer-raw-json" class="raw-json hidden" tabindex="0"><code></code></pre>
+    </section>
+
+    <!-- Mode 2: REST / OpenAPI Playground -->
+    <section id="panel-rest" class="mode-panel hidden" aria-label="REST OpenAPI Playground">
+      <div class="split-layout">
+        <aside class="sidebar-list">
+          <h3>OpenAPI Endpoints</h3>
+          <div id="oas-endpoint-list" class="endpoint-list"></div>
+        </aside>
+        <div class="playground-pane">
+          <div id="oas-empty-state" class="empty-state">
+            Select an endpoint on the left to inspect its OpenAPI schema and execute a live REST call.
+          </div>
+          <div id="oas-runner" class="hidden">
+            <div class="runner-title">
+              <span id="oas-method-badge" class="method-badge">GET</span>
+              <code id="oas-path-display"></code>
+            </div>
+            <p id="oas-summary-text" class="runner-desc"></p>
+
+            <form id="oas-form" class="runner-form">
+              <div id="oas-params-fields"></div>
+              <div id="oas-body-group" class="hidden">
+                <label for="oas-body-input">Request Body (JSON)</label>
+                <textarea id="oas-body-input" rows="8" spellcheck="false"></textarea>
+              </div>
+              <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">Execute REST Call</button>
+              </div>
+            </form>
+
+            <div class="sample-call-box">
+              <div class="sample-call-header">
+                <span class="call-meta">Sample curl</span>
+                <button type="button" id="copy-oas-curl" class="btn btn-small">Copy curl</button>
+              </div>
+              <pre tabindex="0"><code id="oas-curl-code"></code></pre>
+            </div>
+
+            <div class="response-box">
+              <div class="sample-call-header">
+                <span>Response</span>
+                <span id="oas-status-badge" class="badge">—</span>
+              </div>
+              <pre tabindex="0"><code id="oas-response-code">{}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Mode 3: MCP Explorer -->
+    <section id="panel-mcp" class="mode-panel hidden" aria-label="MCP Tools and Resources">
+      <div class="split-layout">
+        <aside class="sidebar-list">
+          <div class="mcp-session-info">
+            <h3>MCP Session</h3>
+            <p class="muted">Endpoint: <code>POST /mcp</code></p>
+            <p class="muted">Session ID: <code id="mcp-session-id">connecting...</code></p>
+          </div>
+          <h3>MCP Tools</h3>
+          <div id="mcp-tool-list" class="endpoint-list"></div>
+          <h3>MCP Resources</h3>
+          <div id="mcp-resource-list" class="endpoint-list"></div>
+        </aside>
+        <div class="playground-pane">
+          <div id="mcp-empty-state" class="empty-state">
+            Select an MCP tool or resource on the left to inspect its JSON Schema and execute a live JSON-RPC 2.0 call.
+          </div>
+          <div id="mcp-runner" class="hidden">
+            <div class="runner-title">
+              <span class="method-badge method-POST">MCP</span>
+              <code id="mcp-tool-name"></code>
+            </div>
+            <p id="mcp-tool-desc" class="runner-desc"></p>
+
+            <details id="mcp-schema-details" class="schema-details">
+              <summary>Request &amp; Response Schemas (<code>inputSchema</code> / <code>outputSchema</code>)</summary>
+              <div class="schema-grid">
+                <div>
+                  <div class="schema-label">inputSchema</div>
+                  <pre tabindex="0"><code id="mcp-input-schema">{}</code></pre>
+                </div>
+                <div>
+                  <div class="schema-label">outputSchema</div>
+                  <pre tabindex="0"><code id="mcp-output-schema">{}</code></pre>
+                </div>
+              </div>
+            </details>
+
+            <form id="mcp-form" class="runner-form">
+              <div id="mcp-args-fields"></div>
+              <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">Execute MCP Call</button>
+              </div>
+            </form>
+
+            <div class="sample-call-box">
+              <div class="sample-call-header">
+                <span class="call-meta">Sample JSON-RPC 2.0 curl</span>
+                <button type="button" id="copy-mcp-curl" class="btn btn-small">Copy curl</button>
+              </div>
+              <pre tabindex="0"><code id="mcp-curl-code"></code></pre>
+            </div>
+
+            <div class="response-box">
+              <div class="sample-call-header">
+                <span>MCP Response</span>
+                <span id="mcp-status-badge" class="badge">—</span>
+              </div>
+              <pre tabindex="0"><code id="mcp-response-code">{}</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="record-dialog" class="record-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-header">
+      <h2 id="dialog-title">Record Details</h2>
+      <button type="button" id="close-dialog-btn" class="btn btn-small">Close</button>
+    </div>
+    <p id="dialog-meta" class="muted"></p>
+    <pre tabindex="0"><code id="dialog-json"></code></pre>
+  </dialog>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>

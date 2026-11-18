@@ -1,0 +1,645 @@
+{
+  "openapi": "3.2.0",
+  "info": {
+    "title": "Sample Business Service API",
+    "version": "1.0.0",
+    "description": "Clean RESTful APIs modeling core enterprise business domains (Customer Master, Material Master, Vendors, Sales Orders, Billing/Invoices, and Procurement/Purchase Orders) backed by an in-memory enterprise demo dataset. Also exposed via MCP at /mcp."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development server"
+    }
+  ],
+  "tags": [
+    { "name": "Summary", "description": "Cross-domain KPI overview" },
+    { "name": "Customers", "description": "Customer Master & Credit Management" },
+    { "name": "Materials", "description": "Material Master & Inventory" },
+    { "name": "Vendors", "description": "Vendor / Supplier Master" },
+    { "name": "Sales Orders", "description": "Order Management" },
+    { "name": "Invoices", "description": "Billing & Accounts Receivable" },
+    { "name": "Purchase Orders", "description": "Procurement & Goods Receipt" }
+  ],
+  "paths": {
+    "/api/v1/summary": {
+      "get": {
+        "tags": ["Summary"],
+        "summary": "Get cross-domain business KPI summary",
+        "operationId": "getBusinessSummary",
+        "responses": {
+          "200": {
+            "description": "KPI summary across customers, materials, sales orders, invoices, and purchase orders",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/BusinessSummary" } } }
+          }
+        }
+      }
+    },
+    "/api/v1/customers": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "List customers",
+        "operationId": "listCustomers",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search by ID, name, city, or industry" },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "BLOCKED", "INACTIVE"] } },
+          { "name": "country", "in": "query", "schema": { "type": "string" }, "description": "ISO 2-letter country code (e.g. US, DE, JP)" },
+          { "name": "salesOrg", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of customers",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CustomerList" } } }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Customers"],
+        "summary": "Create a new customer",
+        "operationId": "createCustomer",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateCustomerInput" } } }
+        },
+        "responses": {
+          "201": { "description": "Customer created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "400": { "description": "Invalid input", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/customers/{id}": {
+      "get": {
+        "tags": ["Customers"],
+        "summary": "Get customer by ID",
+        "operationId": "getCustomer",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "CUST-1001" }],
+        "responses": {
+          "200": { "description": "Customer details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      },
+      "patch": {
+        "tags": ["Customers"],
+        "summary": "Update customer fields",
+        "operationId": "updateCustomer",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateCustomerInput" } } }
+        },
+        "responses": {
+          "200": { "description": "Updated customer", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Customer" } } } },
+          "400": { "description": "Invalid input", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/materials": {
+      "get": {
+        "tags": ["Materials"],
+        "summary": "List materials and stock levels",
+        "operationId": "listMaterials",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Search by ID, SKU, name, or category" },
+          { "name": "type", "in": "query", "schema": { "type": "string", "enum": ["FERT", "HAWA", "ROH"] } },
+          { "name": "category", "in": "query", "schema": { "type": "string" } },
+          { "name": "lowStock", "in": "query", "schema": { "type": "boolean" }, "description": "Filter materials at or below reorderPoint" }
+        ],
+        "responses": {
+          "200": { "description": "List of materials", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/MaterialList" } } } }
+        }
+      }
+    },
+    "/api/v1/materials/{id}": {
+      "get": {
+        "tags": ["Materials"],
+        "summary": "Get material by ID",
+        "operationId": "getMaterial",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "MAT-1001" }],
+        "responses": {
+          "200": { "description": "Material details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Material" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/vendors": {
+      "get": {
+        "tags": ["Vendors"],
+        "summary": "List vendors",
+        "operationId": "listVendors",
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["ACTIVE", "ON_HOLD"] } },
+          { "name": "country", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of vendors", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VendorList" } } } }
+        }
+      }
+    },
+    "/api/v1/vendors/{id}": {
+      "get": {
+        "tags": ["Vendors"],
+        "summary": "Get vendor by ID",
+        "operationId": "getVendor",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "VEND-1001" }],
+        "responses": {
+          "200": { "description": "Vendor details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Vendor" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/sales-orders": {
+      "get": {
+        "tags": ["Sales Orders"],
+        "summary": "List sales orders",
+        "operationId": "listSalesOrders",
+        "parameters": [
+          { "name": "customerId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["OPEN", "CONFIRMED", "DELIVERED", "BILLED", "CANCELLED"] } },
+          { "name": "salesOrg", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of sales orders", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SalesOrderList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["Sales Orders"],
+        "summary": "Create a sales order (checks customer credit & reserves material stock)",
+        "operationId": "createSalesOrder",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateSalesOrderInput" } } }
+        },
+        "responses": {
+          "201": { "description": "Sales order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SalesOrder" } } } },
+          "400": { "description": "Invalid input", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "409": { "description": "Credit limit exceeded, customer blocked, or insufficient stock", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/sales-orders/{id}": {
+      "get": {
+        "tags": ["Sales Orders"],
+        "summary": "Get sales order by ID",
+        "operationId": "getSalesOrder",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "SO-50001" }],
+        "responses": {
+          "200": { "description": "Sales order details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SalesOrder" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/sales-orders/{id}/status": {
+      "patch": {
+        "tags": ["Sales Orders"],
+        "summary": "Update sales order status (CANCELLED releases stock and credit)",
+        "operationId": "updateSalesOrderStatus",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": { "status": { "type": "string", "enum": ["OPEN", "CONFIRMED", "DELIVERED", "BILLED", "CANCELLED"] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated sales order", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SalesOrder" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "409": { "description": "Conflict", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/invoices": {
+      "get": {
+        "tags": ["Invoices"],
+        "summary": "List invoices",
+        "operationId": "listInvoices",
+        "parameters": [
+          { "name": "customerId", "in": "query", "schema": { "type": "string" } },
+          { "name": "salesOrderId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["OPEN", "PAID", "OVERDUE", "CANCELLED"] } }
+        ],
+        "responses": {
+          "200": { "description": "List of invoices", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "Create an invoice from a sales order",
+        "operationId": "createInvoice",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateInvoiceInput" } } }
+        },
+        "responses": {
+          "201": { "description": "Invoice created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "404": { "description": "Sales order not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "409": { "description": "Conflict", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/invoices/{id}": {
+      "get": {
+        "tags": ["Invoices"],
+        "summary": "Get invoice by ID",
+        "operationId": "getInvoice",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "INV-90001" }],
+        "responses": {
+          "200": { "description": "Invoice details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/invoices/{id}/pay": {
+      "post": {
+        "tags": ["Invoices"],
+        "summary": "Record full or partial payment on an invoice (frees customer credit)",
+        "operationId": "payInvoice",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "required": false,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PayInvoiceInput" } } }
+        },
+        "responses": {
+          "200": { "description": "Updated invoice", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Invoice" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "409": { "description": "Already paid or cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/purchase-orders": {
+      "get": {
+        "tags": ["Purchase Orders"],
+        "summary": "List purchase orders",
+        "operationId": "listPurchaseOrders",
+        "parameters": [
+          { "name": "vendorId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string", "enum": ["DRAFT", "APPROVED", "ORDERED", "RECEIVED", "CANCELLED"] } },
+          { "name": "plant", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "List of purchase orders", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PurchaseOrderList" } } } }
+        }
+      },
+      "post": {
+        "tags": ["Purchase Orders"],
+        "summary": "Create a purchase order",
+        "operationId": "createPurchaseOrder",
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePurchaseOrderInput" } } }
+        },
+        "responses": {
+          "201": { "description": "Purchase order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PurchaseOrder" } } } },
+          "400": { "description": "Invalid input", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "409": { "description": "Vendor on hold", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/purchase-orders/{id}": {
+      "get": {
+        "tags": ["Purchase Orders"],
+        "summary": "Get purchase order by ID",
+        "operationId": "getPurchaseOrder",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "example": "PO-45001" }],
+        "responses": {
+          "200": { "description": "Purchase order details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PurchaseOrder" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    },
+    "/api/v1/purchase-orders/{id}/receive": {
+      "post": {
+        "tags": ["Purchase Orders"],
+        "summary": "Post goods receipt (MIGO) for a purchase order, incrementing material stock",
+        "operationId": "receivePurchaseOrder",
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Purchase order marked RECEIVED", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PurchaseOrder" } } } },
+          "404": { "description": "Not found", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } },
+          "409": { "description": "Already received or cancelled", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ApiError" } } } }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" },
+          "message": { "type": "string" }
+        }
+      },
+      "BusinessSummary": {
+        "type": "object",
+        "properties": {
+          "totalCustomers": { "type": "integer" },
+          "activeCustomers": { "type": "integer" },
+          "totalMaterials": { "type": "integer" },
+          "lowStockMaterials": { "type": "integer" },
+          "totalVendors": { "type": "integer" },
+          "totalSalesOrders": { "type": "integer" },
+          "openSalesOrders": { "type": "integer" },
+          "totalInvoices": { "type": "integer" },
+          "openInvoices": { "type": "integer" },
+          "overdueInvoices": { "type": "integer" },
+          "totalBilledAmount": { "type": "number" },
+          "outstandingArAmount": { "type": "number" },
+          "totalPurchaseOrders": { "type": "integer" },
+          "openPurchaseOrders": { "type": "integer" },
+          "openPoCommittedSpend": { "type": "number" }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "legalName": { "type": "string" },
+          "taxId": { "type": "string" },
+          "industry": { "type": "string" },
+          "salesOrg": { "type": "string" },
+          "currency": { "type": "string" },
+          "paymentTerms": { "type": "string" },
+          "creditLimit": { "type": "number" },
+          "creditUsed": { "type": "number" },
+          "status": { "type": "string", "enum": ["ACTIVE", "BLOCKED", "INACTIVE"] },
+          "country": { "type": "string" },
+          "city": { "type": "string" },
+          "street": { "type": "string" },
+          "postalCode": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CustomerList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Customer" } },
+          "count": { "type": "integer" }
+        }
+      },
+      "CreateCustomerInput": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "legalName": { "type": "string" },
+          "taxId": { "type": "string" },
+          "industry": { "type": "string" },
+          "salesOrg": { "type": "string", "default": "1000" },
+          "currency": { "type": "string", "default": "USD" },
+          "paymentTerms": { "type": "string", "default": "NET30" },
+          "creditLimit": { "type": "number", "default": 50000 },
+          "country": { "type": "string", "default": "US" },
+          "city": { "type": "string" },
+          "street": { "type": "string" },
+          "postalCode": { "type": "string" },
+          "email": { "type": "string" },
+          "phone": { "type": "string" }
+        }
+      },
+      "UpdateCustomerInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "paymentTerms": { "type": "string" },
+          "creditLimit": { "type": "number" },
+          "status": { "type": "string", "enum": ["ACTIVE", "BLOCKED", "INACTIVE"] },
+          "email": { "type": "string" },
+          "phone": { "type": "string" }
+        }
+      },
+      "Material": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "sku": { "type": "string" },
+          "name": { "type": "string" },
+          "description": { "type": "string" },
+          "type": { "type": "string", "enum": ["FERT", "HAWA", "ROH"] },
+          "category": { "type": "string" },
+          "baseUom": { "type": "string" },
+          "unitPrice": { "type": "number" },
+          "currency": { "type": "string" },
+          "stockQty": { "type": "integer" },
+          "reorderPoint": { "type": "integer" },
+          "plant": { "type": "string" },
+          "storageLocation": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "MaterialList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Material" } },
+          "count": { "type": "integer" }
+        }
+      },
+      "Vendor": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "category": { "type": "string" },
+          "country": { "type": "string" },
+          "city": { "type": "string" },
+          "currency": { "type": "string" },
+          "paymentTerms": { "type": "string" },
+          "rating": { "type": "string" },
+          "email": { "type": "string" },
+          "taxId": { "type": "string" },
+          "status": { "type": "string" }
+        }
+      },
+      "VendorList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Vendor" } },
+          "count": { "type": "integer" }
+        }
+      },
+      "SalesOrderItem": {
+        "type": "object",
+        "properties": {
+          "itemNumber": { "type": "integer" },
+          "materialId": { "type": "string" },
+          "materialName": { "type": "string" },
+          "quantity": { "type": "integer" },
+          "uom": { "type": "string" },
+          "unitPrice": { "type": "number" },
+          "netAmount": { "type": "number" }
+        }
+      },
+      "SalesOrder": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "customerId": { "type": "string" },
+          "customerName": { "type": "string" },
+          "salesOrg": { "type": "string" },
+          "orderDate": { "type": "string" },
+          "requestedDeliveryDate": { "type": "string" },
+          "status": { "type": "string" },
+          "currency": { "type": "string" },
+          "netAmount": { "type": "number" },
+          "taxAmount": { "type": "number" },
+          "totalAmount": { "type": "number" },
+          "referencePo": { "type": "string" },
+          "notes": { "type": "string" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/SalesOrderItem" } },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SalesOrderList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/SalesOrder" } },
+          "count": { "type": "integer" }
+        }
+      },
+      "CreateSalesOrderInput": {
+        "type": "object",
+        "required": ["customerId", "items"],
+        "properties": {
+          "customerId": { "type": "string", "example": "CUST-1001" },
+          "requestedDeliveryDate": { "type": "string", "example": "2026-12-01" },
+          "referencePo": { "type": "string" },
+          "notes": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["materialId", "quantity"],
+              "properties": {
+                "materialId": { "type": "string", "example": "MAT-1001" },
+                "quantity": { "type": "integer", "example": 2 }
+              }
+            }
+          }
+        }
+      },
+      "InvoiceItem": {
+        "type": "object",
+        "properties": {
+          "itemNumber": { "type": "integer" },
+          "materialId": { "type": "string" },
+          "description": { "type": "string" },
+          "quantity": { "type": "integer" },
+          "uom": { "type": "string" },
+          "unitPrice": { "type": "number" },
+          "netAmount": { "type": "number" }
+        }
+      },
+      "Invoice": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "salesOrderId": { "type": "string" },
+          "customerId": { "type": "string" },
+          "customerName": { "type": "string" },
+          "billingDate": { "type": "string" },
+          "dueDate": { "type": "string" },
+          "status": { "type": "string" },
+          "currency": { "type": "string" },
+          "netAmount": { "type": "number" },
+          "taxAmount": { "type": "number" },
+          "totalAmount": { "type": "number" },
+          "paidAmount": { "type": "number" },
+          "paymentReference": { "type": "string" },
+          "paidAt": { "type": "string", "format": "date-time" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/InvoiceItem" } },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "InvoiceList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/Invoice" } },
+          "count": { "type": "integer" }
+        }
+      },
+      "CreateInvoiceInput": {
+        "type": "object",
+        "required": ["salesOrderId"],
+        "properties": {
+          "salesOrderId": { "type": "string", "example": "SO-50003" },
+          "dueDays": { "type": "integer", "default": 30 }
+        }
+      },
+      "PayInvoiceInput": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "number", "description": "Omit or set <= 0 to pay full remaining balance" },
+          "paymentReference": { "type": "string" }
+        }
+      },
+      "PurchaseOrderItem": {
+        "type": "object",
+        "properties": {
+          "itemNumber": { "type": "integer" },
+          "materialId": { "type": "string" },
+          "materialName": { "type": "string" },
+          "quantity": { "type": "integer" },
+          "uom": { "type": "string" },
+          "unitPrice": { "type": "number" },
+          "netAmount": { "type": "number" }
+        }
+      },
+      "PurchaseOrder": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "vendorId": { "type": "string" },
+          "vendorName": { "type": "string" },
+          "purchasingOrg": { "type": "string" },
+          "plant": { "type": "string" },
+          "orderDate": { "type": "string" },
+          "expectedDeliveryDate": { "type": "string" },
+          "status": { "type": "string" },
+          "currency": { "type": "string" },
+          "totalAmount": { "type": "number" },
+          "notes": { "type": "string" },
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/PurchaseOrderItem" } },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PurchaseOrderList": {
+        "type": "object",
+        "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/PurchaseOrder" } },
+          "count": { "type": "integer" }
+        }
+      },
+      "CreatePurchaseOrderInput": {
+        "type": "object",
+        "required": ["vendorId", "items"],
+        "properties": {
+          "vendorId": { "type": "string", "example": "VEND-1001" },
+          "plant": { "type": "string", "default": "1000" },
+          "expectedDeliveryDate": { "type": "string" },
+          "notes": { "type": "string" },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["materialId", "quantity"],
+              "properties": {
+                "materialId": { "type": "string", "example": "MAT-1004" },
+                "quantity": { "type": "integer", "example": 10 },
+                "unitPrice": { "type": "number", "description": "Optional; defaults to 65% of material unit price" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
