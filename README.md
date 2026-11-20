@@ -65,14 +65,14 @@ Prerequisites: `go`, `gcloud` CLI (authenticated with permissions for Cloud Run,
    export IAP_MEMBERS=                        # optional comma-separated principals (defaults to current gcloud user)
    ```
 
-2. **Load `.env` and run `deploy.sh`:**
+2. **Load `.env` and run `scripts/deploy.sh`:**
 
    ```bash
    source .env
-   ./deploy.sh
+   ./scripts/deploy.sh
    ```
 
-`deploy.sh` will:
+`scripts/deploy.sh` will:
 1. Build the Linux binary (`GOOS=linux GOARCH=amd64 go build`) and deploy `sample-business-services` to Cloud Run with `--iap` enabled.
 2. Create the `SERVICE_ACCOUNT` if it doesn't exist, grant it `roles/run.invoker`, and grant `roles/iam.serviceAccountTokenCreator` to the Apigee service agent (`service-<PROJECT_NUMBER>@gcp-sa-apigee.iam.gserviceaccount.com`).
 3. Configure Cloud Run IAP access (`roles/iap.httpsResourceAccessor`) for the service account and `IAP_MEMBERS` (or your active `gcloud` account).
@@ -187,7 +187,9 @@ curl -s -X POST http://localhost:8080/mcp \
 ```text
 .
 ├── main.go                     # Entrypoint, PORT config, graceful shutdown
-├── deploy.sh                   # Cloud Run + IAP + Apigee (aft) deployment script
+├── scripts/
+│   ├── deploy.sh               # Cloud Run + IAP + Apigee (aft) deployment script
+│   └── register_systemd.sh     # Build and register systemd service on Debian Linux
 ├── env.sample                  # Sample environment variables for deployment
 ├── public/                     # Static monochrome Explorer UI (light/dark)
 ├── apigee/                     # 12 Apigee proxy YAMLs (REST & MCP) + 12 product YAMLs

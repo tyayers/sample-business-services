@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${REPO_ROOT}"
+
 GOOS="linux" GOARCH=amd64 go build
 
 gcloud beta run deploy sample-business-services \
@@ -8,7 +12,8 @@ gcloud beta run deploy sample-business-services \
   --no-build \
   --base-image=osonly24 \
   --command=./sample-business-services \
-  --iap \
+  --no-iap \
+  --no-allow-unauthenticated \
   --project "$GOOGLE_CLOUD_PROJECT" \
   --region "$GOOGLE_CLOUD_LOCATION"
 
@@ -17,7 +22,7 @@ CLOUD_RUN_URL="${CLOUD_RUN_URL:-$(gcloud run services describe sample-business-s
   --region "$GOOGLE_CLOUD_LOCATION" \
   --format='value(status.url)')}"
 
-SERVICE_ACCOUNT="${SERVICE_ACCOUNT:-apigee-service}"
+SERVICE_ACCOUNT="${SERVICE_ACCOUNT:-ai-service}"
 if [[ "$SERVICE_ACCOUNT" != *"@"* ]]; then
   SERVICE_ACCOUNT_EMAIL="${SERVICE_ACCOUNT}@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com"
 else
@@ -45,28 +50,6 @@ gcloud iam service-accounts add-iam-policy-binding "$SERVICE_ACCOUNT_EMAIL" \
   --project "$GOOGLE_CLOUD_PROJECT" \
   --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-apigee.iam.gserviceaccount.com" \
   --role="roles/iam.serviceAccountTokenCreator" >/dev/null
-
-echo "Configuring IAP access for Cloud Run..."
-gcloud beta services identity create --service=iap.googleapis.com --project="$GOOGLE_CLOUD_PROJECT" >/dev/null 2>&1 || true
-gcloud run services add-iam-policy-binding sample-business-services \
-  --project "$GOOGLE_CLOUD_PROJECT" \
-  --region "$GOOGLE_CLOUD_LOCATION" \
-  --member="serviceAccount:service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com" \
-  --role="roles/run.invoker" >/dev/null
-
-# Grant IAP access to the Apigee proxy SA and IAP_MEMBERS (or current gcloud user by default)
-IAP_DEFAULT_USER="$(gcloud config get-value account 2>/dev/null || true)"
-IAP_LIST="${IAP_MEMBERS:-${IAP_DEFAULT_USER:+user:${IAP_DEFAULT_USER}}}"
-for member in "serviceAccount:${SERVICE_ACCOUNT_EMAIL}" ${IAP_LIST//,/ }; do
-  [[ -z "$member" ]] && continue
-  gcloud beta iap web add-iam-policy-binding \
-    --project="$GOOGLE_CLOUD_PROJECT" \
-    --region="$GOOGLE_CLOUD_LOCATION" \
-    --resource-type=cloud-run \
-    --service=sample-business-services \
-    --member="$member" \
-    --role="roles/iap.httpsResourceAccessor" >/dev/null
-done
 
 APIGEE_ORG="${APIGEE_ORG:-$GOOGLE_CLOUD_PROJECT}"
 APIGEE_ENV="${APIGEE_ENV:-eval}"

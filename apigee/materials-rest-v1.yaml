@@ -19,11 +19,12 @@ endpoints:
     routes:
       - name: default
         target: default
-    flows:
-      - name: PreFlow
-        mode: Request
-        steps:
-          - name: Verify-API-Key
+    # Disabled for now; re-enable API key validation later
+    # flows:
+    #   - name: PreFlow
+    #     mode: Request
+    #     steps:
+    #       - name: Verify-API-Key
 targets:
   - name: default
     httpTargetConnection:
@@ -31,6 +32,7 @@ targets:
       Authentication:
         GoogleIDToken:
           Audience: "{CLOUD_RUN_URL}"
+          IncludeEmail: true
 policies:
   - name: Verify-API-Key
     type: VerifyAPIKey
