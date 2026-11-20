@@ -189,6 +189,7 @@ curl -s -X POST http://localhost:8080/mcp \
 ├── main.go                     # Entrypoint, PORT config, graceful shutdown
 ├── scripts/
 │   ├── deploy.sh               # Cloud Run + IAP + Apigee (aft) deployment script
+│   ├── generate_mtls.sh        # Generate mTLS CA/server/client certs & Caddy instructions
 │   └── register_systemd.sh     # Build and register systemd service on Debian Linux
 ├── env.sample                  # Sample environment variables for deployment
 ├── public/                     # Static monochrome Explorer UI (light/dark)

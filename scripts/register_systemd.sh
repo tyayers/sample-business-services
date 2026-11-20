@@ -45,6 +45,19 @@ echo "Installing binary to ${INSTALL_DIR}/${SERVICE_NAME}..."
 ${SUDO} install -d -o "${SERVICE_USER}" -g "${SERVICE_USER}" -m 0755 "${INSTALL_DIR}"
 ${SUDO} install -o "${SERVICE_USER}" -g "${SERVICE_USER}" -m 0755 "${TMP_BIN}" "${INSTALL_DIR}/${SERVICE_NAME}"
 
+LOCAL_ENV_FILE="${REPO_ROOT}/.env"
+INSTALLED_ENV_FILE="${INSTALL_DIR}/.env"
+if [[ -f "${LOCAL_ENV_FILE}" ]]; then
+  echo "Installing environment file from ${LOCAL_ENV_FILE} to ${INSTALLED_ENV_FILE}..."
+  TMP_ENV="$(mktemp)"
+  # Strip CRLF and bash 'export ' prefixes so systemd EnvironmentFile parses cleanly.
+  sed -e 's/\r$//' -e 's/^[[:space:]]*export[[:space:]]\+//' "${LOCAL_ENV_FILE}" > "${TMP_ENV}"
+  ${SUDO} install -o "${SERVICE_USER}" -g "${SERVICE_USER}" -m 0600 "${TMP_ENV}" "${INSTALLED_ENV_FILE}"
+  rm -f "${TMP_ENV}"
+else
+  echo "No local .env found at ${LOCAL_ENV_FILE}; skipping EnvironmentFile copy."
+fi
+
 SEED_ENV_LINE=""
 if [[ -n "${SEED_DIR}" ]]; then
   SEED_ENV_LINE="Environment=\"SEED_DIR=${SEED_DIR}\""
@@ -64,6 +77,7 @@ Group=${SERVICE_USER}
 WorkingDirectory=${INSTALL_DIR}
 ExecStart=${INSTALL_DIR}/${SERVICE_NAME}
 Environment="PORT=${PORT}"
+EnvironmentFile=-${INSTALLED_ENV_FILE}
 ${SEED_ENV_LINE}
 Restart=on-failure
 RestartSec=5
