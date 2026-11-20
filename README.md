@@ -104,6 +104,13 @@ Use `scripts/generate_mtls.sh` to generate a CA, server, and client certificate 
 DOMAIN=api.example.com SERVICE_PORT=8080 ./scripts/generate_mtls.sh
 ```
 
+To expose the Caddy mTLS endpoint through Apigee, set `MTLS_BACKEND_URL` in `.env` and run `scripts/deploy_mtls_proxy.sh`. It creates the Apigee TrustStore/KeyStore and environment references from `certs/` and deploys `apigee/mtls-service-proxy.yaml` with `aft`:
+
+```bash
+source .env
+./scripts/deploy_mtls_proxy.sh
+```
+
 ---
 
 ## REST API Examples
@@ -215,6 +222,7 @@ curl -s -X POST http://localhost:8080/mcp \
 ├── main.go                     # Entrypoint, PORT config, graceful shutdown
 ├── scripts/
 │   ├── deploy.sh               # Cloud Run + IAP + Apigee (aft) deployment script
+│   ├── deploy_mtls_proxy.sh    # Create Apigee mTLS keystores/refs & deploy mTLS proxy
 │   ├── generate_mtls.sh        # Generate mTLS CA/server/client certs & Caddy instructions
 │   └── register_systemd.sh     # Build and register systemd service on Debian Linux
 ├── env.sample                  # Sample environment variables for deployment

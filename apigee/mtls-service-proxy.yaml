@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/apigee/apigee-templater/main/schema/gateway.schema.1.0.json
+gateway: apigee
+schemaVersion: 1.0.0
+name: mtls-service-proxy
+displayName: Sample Business Service (mTLS Proxy)
+type: proxy
+description: Proxy forwarding requests to the Caddy mTLS backend endpoint
+categories:
+  - mtls
+  - backend
+parameters:
+  - name: MTLS_BACKEND_URL
+    displayName: mTLS Backend URL
+    description: HTTPS URL of the Caddy mTLS endpoint (e.g. https://api.example.com:8443)
+    default: https://localhost:8443
+  - name: KEYSTORE_REF
+    displayName: KeyStore Reference
+    description: Apigee environment KeyStore reference containing the client certificate and key
+    default: mtls-keystore-ref
+  - name: KEYSTORE_ALIAS
+    displayName: KeyStore Alias
+    description: Alias of the client certificate in the KeyStore
+    default: mtls-client
+endpoints:
+  - name: default
+    basePath: /v1/mtls-service
+    routes:
+      - name: default
+        target: default
+targets:
+  - name: default
+    httpTargetConnection:
+      URL: "{MTLS_BACKEND_URL}"
+      SSLInfo:
+        Enabled: true
+        ClientAuthEnabled: true
+        KeyStore: "ref://{KEYSTORE_REF}"
+        KeyAlias: "{KEYSTORE_ALIAS}"
