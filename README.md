@@ -80,6 +80,32 @@ Prerequisites: `go`, `gcloud` CLI (authenticated with permissions for Cloud Run,
 
 ---
 
+## Running as a systemd Service (Debian Linux)
+
+Use `scripts/register_systemd.sh` to build the binary, install `.env` (if present), and register/start `sample-business-services` with `systemd`:
+
+```bash
+./scripts/register_systemd.sh
+```
+
+Optional environment variables: `SERVICE_NAME` (default `sample-business-services`), `INSTALL_DIR` (default `/opt/sample-business-services`), `SERVICE_USER`, `PORT` (default `8080`, overridden by `.env`), and `SEED_DIR`.
+
+---
+
+## Securing with mTLS & Caddy
+
+Use `scripts/generate_mtls.sh` to generate a CA, server, and client certificate pair in `certs/` and print step-by-step Caddy configuration instructions:
+
+```bash
+# Default (localhost:8443 -> 127.0.0.1:8080)
+./scripts/generate_mtls.sh
+
+# Or customize domain and ports
+DOMAIN=api.example.com SERVICE_PORT=8080 ./scripts/generate_mtls.sh
+```
+
+---
+
 ## REST API Examples
 
 ### 1. Business KPI Summary
